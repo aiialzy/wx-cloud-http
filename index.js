@@ -1,5 +1,5 @@
-const fileManage = require('./fileManage');
-const common = require('./common');
+const fileManage = require('./src/fileManage');
+const common = require('./src/common');
 
 module.exports = {
   ...common,
