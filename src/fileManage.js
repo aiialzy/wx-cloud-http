@@ -4,38 +4,18 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 
+const { remoteCall } = common;
+
 /**
  * 获取文件上传信息
  * @param {string} dest 
  */
 function getUploadInfo(dest) {
-  const { env } = common.cloudInfo;
-  if (!env) {
-    throw new Error('无效env.');
-  }
-  return new Promise((resolve, reject) => {
-    common
-      .getToken()
-      .then((access_token) => {
-        axios
-          .post(`https://api.weixin.qq.com/tcb/uploadfile?access_token=${access_token}`, {
-            env,
-            path: dest,
-          })
-          .then(({ data }) => {
-            const { errcode, errmsg } = data;
-            if (errcode !== 0) {
-              throw new Error(`${errcode} ${errmsg}`);
-            }
-            resolve(data);
-          })
-          .catch((err) => {
-            reject(err);
-          });
-      })
-      .catch((err) => {
-        reject(err);
-      });
+  return remoteCall({
+    url: '/tcb/uploadfile',
+    args: {
+      path: dest,
+    },
   });
 }
 
@@ -165,31 +145,11 @@ function upload(src, dest) {
  * @param {array} file_list 
  */
 function getDownloadInfo(file_list) {
-  return new Promise((resolve, reject) => {
-    const { env } = common.cloudInfo;
-    common
-      .getToken()
-      .then((access_token) => {
-        axios
-          .post(`https://api.weixin.qq.com/tcb/batchdownloadfile?access_token=${access_token}`, {
-            env,
-            file_list,
-          })
-          .then(({ data }) => {
-            const { errcode, errmsg, file_list } = data;
-            if (errcode !== 0) {
-              reject(errmsg);
-              return;
-            }
-            resolve(file_list);
-          })
-          .catch((err) => {
-            reject(err);
-          })
-      })
-      .catch((err) => {
-        reject(err);
-      });
+  return remoteCall({
+    url: '/tcb/batchdownloadfile',
+    args: {
+      file_list,
+    }
   });
 }
 
@@ -243,37 +203,18 @@ function download(file_list, dir) {
  * @param {array} fileid_list 
  */
 function deleteFiles(fileid_list) {
-  return new Promise((resolve, reject) => { 
-    const { env } = common.cloudInfo;
-    common
-      .getToken()
-      .then((access_token) => {
-        axios
-        .post(`https://api.weixin.qq.com/tcb/batchdeletefile?access_token=${access_token}`, {
-          env,
-          fileid_list,
-        })
-        .then(({ data }) => {
-          const { errcode, errmsg, delete_list } = data;
-          if (errcode !== 0) {
-            reject(errmsg);
-            return;
-          }
-          resolve(delete_list);
-        })
-        .catch((err) => {
-          reject(err);
-        });
-      })
-      .catch((err) => { 
-        reject(err);
-      });
+  return remoteCall({
+    url: '/tcb/batchdeletefile',
+    args: {
+      fileid_list
+    }
   });
 }
 
 module.exports = {
   upload,
   getDownloadInfo,
+  getUploadInfo,
   download,
   deleteFiles,
 };
