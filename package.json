@@ -1,0 +1,27 @@
+{
+  "name": "wx-cloud-http",
+  "version": "0.1.0",
+  "description": "封装微信小程序云开发HTTP API，方便node.js调用",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aiialzy/wx-cloud-http"
+  },
+  "keywords": [
+    "miniapp",
+    "cloud"
+  ],
+  "author": "aiialzy",
+  "homepage": "https://github.com/aiialzy/wx-cloud-http",
+  "bugs": {
+    "url": "https://github.com/aiialzy/wx-cloud-http/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "form-data": "^3.0.0"
+  }
+}
