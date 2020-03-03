@@ -66,7 +66,7 @@ function uploadFile(src, dest) {
  * @param {string} src 
  * @param {string} dest 
  */
-function uploadDir(src, dest) {
+function uploadDir(src, dest, filter) {
   return new Promise((resolve, reject) => {
     if (!dest) {
       dest = '';
@@ -90,14 +90,15 @@ function uploadDir(src, dest) {
           .forEach((item) => {
             paths.push(`${p}/${item}`);
           });
-
-      } else if (stat.isFile()) {
+      } else if (stat.isFile() && filter(p)) {
         let tem = path.parse(p);
         tem = path.normalize(`${tem.dir}/${tem.name}${tem.ext}`);
+        tem = tem.substring(src.length);
         if (dest) {
           tem = `${dest}/${tem}`;
         }
         tem = tem.replace(/\\/g, '/');
+        tem = tem.replace(/\/\//g, '/');
         promises.push(uploadFile(p, tem));
       }
     }
@@ -116,8 +117,9 @@ function uploadDir(src, dest) {
  * 判断文件类型并上传文件
  * @param {string} src 
  * @param {string} dest 
+ * @param {(path) => boolean} filter 
  */
-function upload(src, dest) {
+function upload(src, dest, filter) {
   return new Promise((resolve, reject) => {
     const stat = fs.statSync(src);
     if (stat.isFile()) {
@@ -129,7 +131,7 @@ function upload(src, dest) {
           reject(err);
         })
     } else if (stat.isDirectory()) {
-      uploadDir(src, dest)
+      uploadDir(src, dest, filter)
         .then((res) => {
           resolve(res);
         })
