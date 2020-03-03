@@ -90,7 +90,10 @@ function uploadDir(src, dest, filter) {
           .forEach((item) => {
             paths.push(`${p}/${item}`);
           });
-      } else if (stat.isFile() && filter(p)) {
+      } else if (stat.isFile()) {
+        if (filter && !filter(p)) {
+          continue;
+        }
         let tem = path.parse(p);
         tem = path.normalize(`${tem.dir}/${tem.name}${tem.ext}`);
         tem = tem.substring(src.length);
