@@ -1,7 +1,12 @@
 const axios = require('axios');
+const EventEmitter = require('events');
+
+const tokenEmitter = new EventEmitter();
+tokenEmitter.setMaxListeners(100);
 
 const token = {
   val: '',
+  getting: false,
   validTime: 0,
 };
 
@@ -17,18 +22,26 @@ const cloudInfo = {
  * @param {string} secret 
  */
 function getToken() {
-  const appid = cloudInfo.appid;
-  const secret = cloudInfo.secret;
-  if (!appid) {
-    throw new Error('无效appid.');
-  } else if (!secret) {
-    throw new Error('无效secret.');
-  }
   return new Promise((resolve, reject) => {
-    if (Date.now() - token.validTime < 0) {
+    const appid = cloudInfo.appid;
+    const secret = cloudInfo.secret;
+    if (!appid) {
+      reject('无效appid.');
+      return;
+    } else if (!secret) {
+      reject('无效secret.');
+      return;
+    } else if (Date.now() - token.validTime < 0) {
       resolve(token.val);
       return;
+    } else if (token.getting) {
+      tokenEmitter.on('got', (access_token) => {
+        resolve(access_token);
+      });
+      return;
     }
+
+    token.getting = true;
     axios
       .get(`https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`)
       .then((res) => {
@@ -38,6 +51,9 @@ function getToken() {
           throw new Error(`${errcode} ${errmsg}`);
         }
         token.validTime = Date.now() + expires_in * 1000;
+        token.val = access_token;
+        token.getting = false;
+        tokenEmitter.emit('got', access_token);
         resolve(access_token);
       })
       .catch((err) => {
@@ -74,8 +90,9 @@ function remoteCall(config) {
           }
         }
 
+        const url = `https://api.weixin.qq.com${config.url}?access_token=${access_token}${query}`;
         axios
-          .post(`https://api.weixin.qq.com${config.url}?access_token=${access_token}${query}`, {
+          .post(url, {
             env,
             ...config.args,
           })
