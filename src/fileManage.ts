@@ -1,42 +1,52 @@
-const common = require('./common');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const FormData = require('form-data');
-
-const { remoteCall } = common;
+import { remoteCall, CommonResponse, setEnvironment } from './common';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as FormData from 'form-data';
+import axios from 'axios';
 
 /**
  * 获取文件上传信息
- * @param {string} dest 
+ * @param {string} dest 云端路径
+ * 
+ * 详情请看：https://developers.weixin.qq.com/miniprogram/dev/wxcloud/reference-http-api/storage/uploadFile.html
  */
-function getUploadInfo(dest) {
+function getUploadInfo(dest: string) {
   return remoteCall({
     url: '/tcb/uploadfile',
-    args: {
+    data: {
       path: dest,
     },
   });
 }
 
+interface UploadInfo extends CommonResponse {
+  url: string;
+  token: string;
+  authorization: string;
+  file_id: string;
+  cos_file_id: string;
+}
+
 /**
  * 上传文件
- * @param {string} src 
- * @param {string} dest 
+ * @param {string} src 源路径
+ * @param {string} dest 云端路径
+ * 
+ * 详情请看：https://developers.weixin.qq.com/miniprogram/dev/wxcloud/reference-http-api/storage/uploadFile.html
  */
-function uploadFile(src, dest) {
+export function uploadFile(src: string, dest: string) {
   return new Promise(async (resolve, reject) => {
     if (!dest) {
       dest = path.normalize(src);
       dest = dest.replace(/\\/g, '/');
     }
-    fs.readFile(src, async (err, file) => {
+    fs.readFile(src, async (err: Error, file: Buffer) => {
       if (err) {
         reject(err);
         return;
       }
       getUploadInfo(dest)
-        .then((res) => {
+        .then((res: UploadInfo) => {
           const { url, token, authorization, cos_file_id, file_id } = res;
           const form = new FormData();
   
@@ -61,17 +71,16 @@ function uploadFile(src, dest) {
   });
 }
 
+type Filter = (p: string) => boolean;
+
 /**
  * 上传文件夹
- * @param {string} src 
- * @param {string} dest 
+ * @param {string} src 源路径
+ * @param {string} dest 云端路径
+ * @param {Function} filter 文件过滤
  */
-function uploadDir(src, dest, filter) {
+export function uploadDir(src: string, dest: string = '', filter?: Filter) {
   return new Promise((resolve, reject) => {
-    if (!dest) {
-      dest = '';
-    }
-
     // 去除开头的 / 和空白
     let index = 0;
     while (index<dest.length && (dest[index]==='/' || dest[index]===' ' || dest[index]==='\t')) {
@@ -94,9 +103,9 @@ function uploadDir(src, dest, filter) {
         if (filter && !filter(p)) {
           continue;
         }
-        let tem = path.parse(p);
-        tem = path.normalize(`${tem.dir}/${tem.name}${tem.ext}`);
-        tem = tem.substring(src.length);
+        let parsedPath = path.parse(p);
+        let tem = path.normalize(`${parsedPath.dir}/${parsedPath.name}${parsedPath.ext}`);
+        tem = tem.substring(src.length - 1);
         if (dest) {
           tem = `${dest}/${tem}`;
         }
@@ -117,45 +126,45 @@ function uploadDir(src, dest, filter) {
 }
 
 /**
- * 判断文件类型并上传文件
- * @param {string} src 
- * @param {string} dest 
- * @param {(path) => boolean} filter 
+ * 删除云端文件
+ * @param {array} fileid_list 文件列表
+ * 
+ * 详情请看：https://developers.weixin.qq.com/miniprogram/dev/wxcloud/reference-http-api/storage/batchDeleteFile.html
  */
-function upload(src, dest, filter) {
-  return new Promise((resolve, reject) => {
-    const stat = fs.statSync(src);
-    if (stat.isFile()) {
-      uploadFile(src, dest)
-        .then((res) => {
-          resolve(res);
-        })
-        .catch((err) => {
-          reject(err);
-        })
-    } else if (stat.isDirectory()) {
-      uploadDir(src, dest, filter)
-        .then((res) => {
-          resolve(res);
-        })
-        .catch((err) => {
-          reject(err);
-        });
+export function deleteFiles(fileid_list: [string]) {
+  return remoteCall({
+    url: '/tcb/batchdeletefile',
+    data: {
+      fileid_list
     }
   });
 }
 
 /**
  * 获取文件下载信息
- * @param {array} file_list 
+ * @param {[string]} file_list 
+ * 
+ * 详情请看：https://developers.weixin.qq.com/miniprogram/dev/wxcloud/reference-http-api/storage/batchDownloadFile.html
  */
-function getDownloadInfo(file_list) {
+function getDownloadInfo(file_list: Array<CloudFileDownloadInfo>) {
   return remoteCall({
     url: '/tcb/batchdownloadfile',
-    args: {
+    data: {
       file_list,
     }
   });
+}
+
+interface CloudFile {
+  status: number;
+  errmsg: string;
+  fileid: string;
+  download_url: string;
+}
+
+interface CloudFileDownloadInfo {
+  fileid: string;
+  max_age: number;
 }
 
 /**
@@ -163,15 +172,12 @@ function getDownloadInfo(file_list) {
  * @param {array} file_list 
  * @param {string} dir 
  */
-function download(file_list, dir) {
+export function download(file_list: Array<CloudFileDownloadInfo>, dir: string = '.') {
   return new Promise((resolve, reject) => {
     getDownloadInfo(file_list)
-      .then((list) => {
+      .then(({ file_list }: { file_list: [CloudFile] }) => {
         let files = [];
-        if (!dir) {
-          dir = '.';
-        }
-        for (const item of list) {
+        for (const item of file_list) {
           if (item.status === 0) {
             const { download_url, fileid } = item;
             files.push({
@@ -203,23 +209,29 @@ function download(file_list, dir) {
   });
 }
 
-/**
- * 删除云端文件
- * @param {array} fileid_list 
- */
-function deleteFiles(fileid_list) {
-  return remoteCall({
-    url: '/tcb/batchdeletefile',
-    args: {
-      fileid_list
-    }
-  });
-}
+setEnvironment({
+  appid: 'wxb9eeedf9954b45e3',
+  secret: '7cf17c83e4e5b5308b494dcec945f553',
+  env: 'xiaocaoyueyu-0t5p7',
+});
 
-module.exports = {
-  upload,
-  getDownloadInfo,
-  getUploadInfo,
-  download,
-  deleteFiles,
-};
+download([
+  {
+    fileid: 'cloud://xiaocaoyueyu-0t5p7.7869-xiaocaoyueyu-0t5p7-1259807664/src/cloudFunction.ts',
+    max_age: 7200,
+  },
+  {
+    fileid: 'cloud://xiaocaoyueyu-0t5p7.7869-xiaocaoyueyu-0t5p7-1259807664/src/cloudFunction.ts',
+    max_age: 7200,
+  },
+  {
+    fileid: 'cloud://xiaocaoyueyu-0t5p7.7869-xiaocaoyueyu-0t5p7-1259807664/src/cloudFunction.ts',
+    max_age: 7200,
+  },
+], 'C:\\Users\\aiialzy\\Desktop')
+  .then(res => {
+
+  })
+  .catch(err => {
+    console.error(err);
+  })

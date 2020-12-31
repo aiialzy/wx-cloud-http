@@ -1,0 +1,13 @@
+export declare function migrateImport(data: object): Promise<unknown>;
+export declare function migrateExport(data: object): Promise<unknown>;
+export declare function migrateQueryInfo(job_id: number): Promise<unknown>;
+export declare function updateIndex(data: object): Promise<unknown>;
+export declare function addCollection(collection_name: string): Promise<unknown>;
+export declare function deleteCollection(collection_name: string): Promise<unknown>;
+export declare function getCollectionInfo(limit: number, offset: number): Promise<unknown>;
+export declare function addRecord(query: string): Promise<unknown>;
+export declare function deleteRecord(query: string): Promise<unknown>;
+export declare function updateRecord(query: string): Promise<unknown>;
+export declare function queryRecord(query: string): Promise<unknown>;
+export declare function aggregate(query: string): Promise<unknown>;
+export declare function count(query: string): Promise<unknown>;
