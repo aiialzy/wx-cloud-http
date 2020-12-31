@@ -208,30 +208,3 @@ export function download(file_list: Array<CloudFileDownloadInfo>, dir: string = 
       });
   });
 }
-
-setEnvironment({
-  appid: 'wxb9eeedf9954b45e3',
-  secret: '7cf17c83e4e5b5308b494dcec945f553',
-  env: 'xiaocaoyueyu-0t5p7',
-});
-
-download([
-  {
-    fileid: 'cloud://xiaocaoyueyu-0t5p7.7869-xiaocaoyueyu-0t5p7-1259807664/src/cloudFunction.ts',
-    max_age: 7200,
-  },
-  {
-    fileid: 'cloud://xiaocaoyueyu-0t5p7.7869-xiaocaoyueyu-0t5p7-1259807664/src/cloudFunction.ts',
-    max_age: 7200,
-  },
-  {
-    fileid: 'cloud://xiaocaoyueyu-0t5p7.7869-xiaocaoyueyu-0t5p7-1259807664/src/cloudFunction.ts',
-    max_age: 7200,
-  },
-], 'C:\\Users\\aiialzy\\Desktop')
-  .then(res => {
-
-  })
-  .catch(err => {
-    console.error(err);
-  })
